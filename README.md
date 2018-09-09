@@ -31,6 +31,7 @@ If you're logging to graylog I suggest you also use the GELF encoder from this p
   <groupId>me.moocar</groupId>
   <artifactId>logback-gelf</artifactId>
   <version>0.3</version>
+  <scope>runtime</scope>
 </dependency>
 ```
 
