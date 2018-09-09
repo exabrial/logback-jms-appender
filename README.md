@@ -1,5 +1,5 @@
 # Logback JMS Appender
-Provides a way to send all your logback messages over JMS to a queue! Take advantage of reliable messaging and buffering already built into your app and use it for logging.
+Provides a way to send all your logback messages over JMS to a queue! Take advantage of reliable messaging and buffering already built into your app and use it for logging. Bridges `YourApp->ActiveMQ` (or your server's JMS provider)
 
 This plugin performs a JNDI lookup to a JMS connection factory. It requires at least Java EE 7. 
 
