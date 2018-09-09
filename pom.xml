@@ -13,9 +13,9 @@
 
 	<url>https://github.com/exabrial/graylog-plugin-openwire</url>
 	<scm>
-		<connection>scm:git:ssh://git@github.com/exabrial/graylog-plugin-openwire.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/exabrial/graylog-plugin-openwire.git</developerConnection>
-		<url>https://github.com/exabrial/graylog-plugin-openwire/tree/master</url>
+		<connection>scm:git:ssh://git@github.com/exabrial/exabrial/logback-jms-appender.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/exabrial/logback-jms-appender.git</developerConnection>
+		<url>https://github.com/exabrial/logback-jms-appender/tree/master</url>
 		<tag>HEAD</tag>
 	</scm>
 
