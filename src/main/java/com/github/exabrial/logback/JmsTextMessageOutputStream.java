@@ -16,75 +16,64 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 public class JmsTextMessageOutputStream extends OutputStream {
-	private final String initialContextFactory;
-	private final String jmsConnectionFactoryJndiName;
-	private final String queueName;
-	private Queue queue;
-	private JMSProducer producer;
+	private Queue jmsQueue;
+	private JMSProducer jmsProducer;
 	private JMSContext jmsContext;
 	private Writer writer;
-	private String state = "uninitialized";
-	private InitialContext context;
+	private InitialContext initialContext;
 
-	public JmsTextMessageOutputStream(String initialContextFactory, String jmsConnectionFactoryJndiName, String queueName)
-			throws NamingException {
-		this.initialContextFactory = initialContextFactory;
-		this.jmsConnectionFactoryJndiName = jmsConnectionFactoryJndiName;
-		this.queueName = queueName;
-		Properties props = new Properties();
+	public JmsTextMessageOutputStream(final String initialContextFactory, final String jmsConnectionFactoryJndiName,
+			final String queueName) throws NamingException {
+		final Properties props = new Properties();
 		props.put(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory);
-		context = new InitialContext(props);
-		ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup(jmsConnectionFactoryJndiName);
+		initialContext = new InitialContext(props);
+		final ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup(jmsConnectionFactoryJndiName);
 		jmsContext = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE);
-		queue = jmsContext.createQueue(queueName);
-		producer = jmsContext.createProducer();
-		state = "initialized";
+		jmsQueue = jmsContext.createQueue(queueName);
+		jmsProducer = jmsContext.createProducer();
 	}
 
 	@Override
-	public void write(int out) throws IOException {
+	public void write(final int out) throws IOException {
 		if (writer == null) {
-			state = "writing";
 			writer = new StringWriter();
 		}
 		writer.write(out);
 	}
 
 	@Override
+	public void write(final byte[] b) throws IOException {
+		if (writer == null) {
+			writer = new StringWriter();
+		}
+		writer.write(new String(b));
+	}
+
+	@Override
 	public void flush() throws IOException {
-		state = "flushing";
 		final String buffer = writer.toString();
 		writer = null;
-		producer.send(queue, buffer);
-		state = "initialized";
+		jmsProducer.send(jmsQueue, buffer);
 	}
 
 	@Override
 	public void close() throws IOException {
-		state = "closing";
 		try {
-			context.close();
-		} catch (Exception e) {
+			initialContext.close();
+		} catch (final Exception e) {
 			throw new RuntimeException(e);
 		} finally {
 			try {
 				jmsContext.close();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new RuntimeException(e);
 			} finally {
-				context = null;
+				initialContext = null;
 				jmsContext = null;
-				queue = null;
-				producer = null;
+				jmsQueue = null;
+				jmsProducer = null;
 				writer = null;
-				state = "closed";
 			}
 		}
-	}
-
-	@Override
-	public String toString() {
-		return "JmsTextMessageOutputStream [state=" + state + ", initialContextFactory=" + initialContextFactory
-				+ ", jmsConnectionFactoryJndiName=" + jmsConnectionFactoryJndiName + ", queueName=" + queueName + "]";
 	}
 }
