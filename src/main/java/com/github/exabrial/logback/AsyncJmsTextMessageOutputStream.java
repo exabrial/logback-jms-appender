@@ -18,14 +18,15 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 public class AsyncJmsTextMessageOutputStream extends OutputStream {
-	private ArrayBlockingQueue<byte[]> messageBuffer = new ArrayBlockingQueue<>(256);
+	private ArrayBlockingQueue<byte[]> messageBuffer;
 	private Thread outputThread;
 	private final AtomicLong messagesDequeued = new AtomicLong(0);
 	private final AtomicInteger messagedDropped = new AtomicInteger(0);
 	private final AtomicInteger writeStalls = new AtomicInteger(0);
 
 	public AsyncJmsTextMessageOutputStream(final String initialContextFactory, final String jmsConnectionFactoryJndiName,
-			final String queueName) throws NamingException {
+			final String queueName, final int asyncBufferSize) throws NamingException {
+		messageBuffer = new ArrayBlockingQueue<>(asyncBufferSize);
 		this.outputThread = new Thread() {
 			@Override
 			public void run() {
@@ -131,7 +132,7 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 		return messagesDequeued.get();
 	}
 
-	public int getMessagedDropped() {
+	public int getMessagesDropped() {
 		return messagedDropped.get();
 	}
 

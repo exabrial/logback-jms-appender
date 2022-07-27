@@ -30,6 +30,11 @@ public class JmsAppenderStats implements JmsAppenderStatsMBean {
 	}
 
 	@Override
+	public int getAsyncBufferSize() {
+		return jmsAppender.getAsyncBufferSize();
+	}
+
+	@Override
 	public boolean isStarted() {
 		return jmsAppender.isStarted();
 	}
@@ -50,8 +55,8 @@ public class JmsAppenderStats implements JmsAppenderStatsMBean {
 	}
 
 	@Override
-	public int getMessagedDropped() {
-		return jmsAppender.getMessagedDropped();
+	public int getMessagesDropped() {
+		return jmsAppender.getMessagesDropped();
 	}
 
 	@Override

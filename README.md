@@ -19,7 +19,7 @@ The default `com.github.exabrial.logback.JmsAppender` will work almost-out-of-th
 <dependency>
   <groupId>com.github.exabrial</groupId>
   <artifactId>logback-jms-appender</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <scope>runtime</scope>
 </dependency>
 ```
@@ -38,11 +38,13 @@ If you're logging to graylog I suggest you also use the GELF encoder from this p
 ## Configuration
 
 
-| Property Name                | Default                                              | Purpose                                                                                                                         | Required |
-|------------------------------|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------|
-| initialContextFactory        | org.apache.openejb.client.LocalInitialContextFactory | Each Java EE server will have a different InitialContext class to use. You'll find this in your server's documentation.         | Y        |
-| jmsConnectionFactoryJndiName | openejb:Resource/jms/connectionFactory               | This is passed to the initial context factory to perform the lookup. Different servers will keep resources in different places. | Y        |
-| queueName                    | ch.qos.logback                                       | The JMS Queue name to send messages to.                                                                                         | Y        |
+| Property Name                | Default                                              | Purpose                                                                                                                         |
+|------------------------------|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| initialContextFactory        | org.apache.openejb.client.LocalInitialContextFactory | Each Java EE server will have a different InitialContext class to use. You'll find this in your server's documentation.         |
+| jmsConnectionFactoryJndiName | openejb:Resource/jms/connectionFactory | This is passed to the initial context factory to perform the lookup. Different servers will keep resources in different places. |
+| queueName                    | ch.qos.logback | The JMS Queue name to send messages to.                                                                                         |
+| async                        | false | Use an ArrayBlockingQueue as a buffer. Messages will be sent in another thread. Message overflows are dumped to `System.err` after waiting 25ms. A JMX is registered to monitor stats. While the default here is `false` for backwards compatibility, it's highly recommend you set this to `true`. |
+| asyncBufferSize             | 256 | If `async=true`, this is size of the ArrayBlockingQueue. It is recommended to leave this as is. Monitor JMX for writeStalls and messagesDropped if changed. |
 
 ### Example Configuration
 
@@ -68,6 +70,7 @@ This configuration uses the GELF encoder mentioned earlier (since I send my logg
 				</staticField>
 			</layout>
 		</encoder>
+		<async>true</async>
 	</appender>
 	<root level="info">
 		<appender-ref ref="gelf-jms" />

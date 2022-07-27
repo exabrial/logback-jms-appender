@@ -11,6 +11,7 @@ public class JmsAppender<E> extends OutputStreamAppender<E> {
 	private String jmsConnectionFactoryJndiName = "openejb:Resource/jms/connectionFactory";
 	private String queueName = "ch.qos.logback";
 	private boolean async = false;
+	private int asyncBufferSize = 256;
 	private final String id = UUID.randomUUID().toString();
 
 	@Override
@@ -23,7 +24,8 @@ public class JmsAppender<E> extends OutputStreamAppender<E> {
 				if (!async) {
 					setOutputStream(new JmsTextMessageOutputStream(initialContextFactory, jmsConnectionFactoryJndiName, queueName));
 				} else {
-					setOutputStream(new AsyncJmsTextMessageOutputStream(initialContextFactory, jmsConnectionFactoryJndiName, queueName));
+					setOutputStream(
+							new AsyncJmsTextMessageOutputStream(initialContextFactory, jmsConnectionFactoryJndiName, queueName, asyncBufferSize));
 				}
 				super.start();
 				addInfo("JmsAppender using async mode:" + async);
@@ -72,6 +74,14 @@ public class JmsAppender<E> extends OutputStreamAppender<E> {
 		this.queueName = queueName;
 	}
 
+	public int getAsyncBufferSize() {
+		return asyncBufferSize;
+	}
+
+	public void setAsyncBufferSize(final int asyncBufferSize) {
+		this.asyncBufferSize = asyncBufferSize;
+	}
+
 	@Override
 	public void setImmediateFlush(final boolean immediateFlush) {
 		super.setImmediateFlush(true);
@@ -93,9 +103,9 @@ public class JmsAppender<E> extends OutputStreamAppender<E> {
 		}
 	}
 
-	public int getMessagedDropped() {
+	public int getMessagesDropped() {
 		if (getOutputStream() instanceof AsyncJmsTextMessageOutputStream) {
-			return ((AsyncJmsTextMessageOutputStream) getOutputStream()).getMessagedDropped();
+			return ((AsyncJmsTextMessageOutputStream) getOutputStream()).getMessagesDropped();
 		} else {
 			return -1;
 		}
@@ -116,8 +126,8 @@ public class JmsAppender<E> extends OutputStreamAppender<E> {
 	@Override
 	public String toString() {
 		return "JmsAppender [initialContextFactory=" + initialContextFactory + ", jmsConnectionFactoryJndiName="
-				+ jmsConnectionFactoryJndiName + ", queueName=" + queueName + ", async=" + async + ", id=" + id + ", getCurrentQueueDepth()="
-				+ getCurrentQueueDepth() + ", getMessagesDequeued()=" + getMessagesDequeued() + ", getMessagedDropped()="
-				+ getMessagedDropped() + ", getWriteStalls()=" + getWriteStalls() + "]";
+				+ jmsConnectionFactoryJndiName + ", queueName=" + queueName + ", async=" + async + ", asyncBufferSize=" + asyncBufferSize
+				+ ", id=" + id + ", getCurrentQueueDepth()=" + getCurrentQueueDepth() + ", getMessagesDequeued()=" + getMessagesDequeued()
+				+ ", getMessagesDropped()=" + getMessagesDropped() + ", getWriteStalls()=" + getWriteStalls() + "]";
 	}
 }

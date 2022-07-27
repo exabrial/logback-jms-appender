@@ -9,6 +9,8 @@ public interface JmsAppenderStatsMBean {
 
 	String getQueueName();
 
+	int getAsyncBufferSize();
+
 	boolean isStarted();
 
 	boolean isImmediateFlush();
@@ -17,7 +19,7 @@ public interface JmsAppenderStatsMBean {
 
 	long getMessagesDequeued();
 
-	int getMessagedDropped();
+	int getMessagesDropped();
 
 	int getWriteStalls();
 }
