@@ -18,19 +18,14 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 public class AsyncJmsTextMessageOutputStream extends OutputStream {
-	private final String initialContextFactory;
-	private final String jmsConnectionFactoryJndiName;
-	private final String queueName;
 	private ArrayBlockingQueue<byte[]> messageBuffer = new ArrayBlockingQueue<>(256);
 	private Thread outputThread;
-	private final AtomicLong messagesDequeued = new AtomicLong();
-	private final AtomicInteger messagedDropped = new AtomicInteger();
+	private final AtomicLong messagesDequeued = new AtomicLong(0);
+	private final AtomicInteger messagedDropped = new AtomicInteger(0);
+	private final AtomicInteger writeStalls = new AtomicInteger(0);
 
 	public AsyncJmsTextMessageOutputStream(final String initialContextFactory, final String jmsConnectionFactoryJndiName,
 			final String queueName) throws NamingException {
-		this.initialContextFactory = initialContextFactory;
-		this.jmsConnectionFactoryJndiName = jmsConnectionFactoryJndiName;
-		this.queueName = queueName;
 		this.outputThread = new Thread() {
 			@Override
 			public void run() {
@@ -41,6 +36,13 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 					props.put(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory);
 					initialContext = new InitialContext(props);
 					final ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup(jmsConnectionFactoryJndiName);
+					try {
+						if (initialContext != null) {
+							initialContext.close();
+						}
+					} catch (final NamingException e) {
+						// toss
+					}
 					jmsContext = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE);
 					jmsContext.start();
 					final Queue jmsQueue = jmsContext.createQueue(queueName);
@@ -68,16 +70,8 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 					e.printStackTrace();
 					throw new RuntimeException(e);
 				} finally {
-					try {
-						if (initialContext != null) {
-							initialContext.close();
-						}
-					} catch (final NamingException e) {
-						throw new RuntimeException(e);
-					} finally {
-						if (jmsContext != null) {
-							jmsContext.close();
-						}
+					if (jmsContext != null) {
+						jmsContext.close();
 					}
 				}
 			}
@@ -98,15 +92,18 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 
 	@Override
 	public void write(final byte[] directWriteBuffer) throws IOException {
-		try {
-			if (!messageBuffer.offer(directWriteBuffer, 25, TimeUnit.MILLISECONDS)) {
-				messagedDropped.incrementAndGet();
-				System.err.println("WARNING: Buffer full after waiting 25ms. JmsTextMessageOutputStream is dropping message:"
-						+ new String(directWriteBuffer));
+		if (!messageBuffer.offer(directWriteBuffer)) {
+			writeStalls.incrementAndGet();
+			try {
+				if (!messageBuffer.offer(directWriteBuffer, 25, TimeUnit.MILLISECONDS)) {
+					messagedDropped.incrementAndGet();
+					System.err.println("WARNING: Buffer full after waiting 25ms. JmsTextMessageOutputStream is dropping message:"
+							+ new String(directWriteBuffer));
+				}
+			} catch (final InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException(e);
 			}
-		} catch (final InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new RuntimeException(e);
 		}
 	}
 
@@ -126,14 +123,7 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return "JmsTextMessageOutputStream [initialContextFactory=" + initialContextFactory + ", jmsConnectionFactoryJndiName="
-				+ jmsConnectionFactoryJndiName + ", queueName=" + queueName + ", getQueueDepth()=" + getQueueDepth()
-				+ ", getMessagesDequeued()=" + getMessagesDequeued() + ", getMessagedDropped()=" + getMessagedDropped() + "]";
-	}
-
-	public int getQueueDepth() {
+	public int getCurrentQueueDepth() {
 		return messageBuffer.size();
 	}
 
@@ -143,5 +133,9 @@ public class AsyncJmsTextMessageOutputStream extends OutputStream {
 
 	public int getMessagedDropped() {
 		return messagedDropped.get();
+	}
+
+	public int getWriteStalls() {
+		return writeStalls.get();
 	}
 }
