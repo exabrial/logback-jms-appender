@@ -1,6 +1,7 @@
 package com.github.exabrial.logback.jmx;
 
 import java.lang.management.ManagementFactory;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,8 +47,10 @@ public final class JmsAppenderJmxCollector {
 	}
 
 	private static final ObjectName toObjectName(final JmsAppender<?> jmsAppender) throws MalformedObjectNameException {
-		final ObjectName mbeanName = new ObjectName(JmsAppenderStatsMBean.class.getPackage().getName() + ":type="
-				+ JmsAppenderStats.class.getName() + ",name=" + jmsAppender.getId());
+		final Hashtable<String, String> hashTable = new Hashtable<>();
+		hashTable.put("type", JmsAppenderStats.class.getName());
+		hashTable.put("name", jmsAppender.getId());
+		final ObjectName mbeanName = new ObjectName(JmsAppenderStatsMBean.class.getPackage().getName(), hashTable);
 		return mbeanName;
 	}
 }
